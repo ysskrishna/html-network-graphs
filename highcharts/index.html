@@ -1,0 +1,205 @@
+<!-- https://docs.anychart.com/Basic_Charts/Network_Graph#individual_edges -->
+<html>
+  <head>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/networkgraph.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+    <style type="text/css">
+      html, body, #container {
+        min-width: 320px;
+        max-width: 800px;
+        margin: 0 auto;
+        height: 500px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <script>
+        const dummyData = {
+            "ENTITY": [{
+                "ID":"PEOPL-1",
+                "NAME":"SIVA"
+            }, {
+                "ID":"PEOPL-2",
+                "NAME":"BALA"
+            },
+            {
+                "ID":"PEOPL-3",
+                "NAME":"PRAVEEN"
+            }, 
+            {
+                "ID":"BUSIN-4",
+                "NAME":"RADAPTIVE"
+            }],
+            "META_RELATIONSHIP_DEF": [{
+                "ID": 1,
+                "RELDESC1TO2": "Knows",
+                "RELDESC2TO1": "Knows"
+            },
+            {
+                "ID": 2,
+                "RELDESC1TO2": "Family/Friend",
+                "RELDESC2TO1": "Family/Friend"
+            },
+            {
+                "ID": 3,
+                "RELDESC1TO2": "Worked/WorksWith",
+                "RELDESC2TO1": "Worked/WorksWith"
+            },
+            {
+                "ID": 4,
+                "RELDESC1TO2": "WorksIn/WorkedFor",
+                "RELDESC2TO1": "WorksIn/WorkedFor"
+            }],
+            "RT_RECORD_RELATION": [{
+                "ID": 1,
+                "ID1": "PEOPL-1",
+                "ID2": "PEOPL-2",
+                "RELTYPE_ID":1
+            },
+            {
+                "ID": 2,
+                "ID1": "PEOPL-2",
+                "ID2": "PEOPL-1",
+                "RELTYPE_ID":1
+            },
+            {
+                "ID": 3,
+                "ID1": "PEOPL-2",
+                "ID2": "PEOPL-3",
+                "RELTYPE_ID":2
+            },
+            {
+                "ID": 4,
+                "ID1": "PEOPL-3",
+                "ID2": "PEOPL-2",
+                "RELTYPE_ID":2
+            },
+            {
+                "ID": 5,
+                "ID1": "PEOPL-1",
+                "ID2": "PEOPL-3",
+                "RELTYPE_ID":3
+            },
+            {
+                "ID": 6,
+                "ID1": "PEOPL-3",
+                "ID2": "PEOPL-1",
+                "RELTYPE_ID":3
+            },
+            {
+                "ID": 7,
+                "ID1": "PEOPL-1",
+                "ID2": "BUSIN-4",
+                "RELTYPE_ID":4
+            },
+            {
+                "ID": 8,
+                "ID1": "BUSIN-4",
+                "ID2": "PEOPL-1",
+                "RELTYPE_ID":4
+            }]
+        };
+
+        /* eslint-disable default-case */
+        var companyColor = '#E8544E', peopleColor = '#FFD265';
+        var edgeColors = {
+            1: "#ff0000",
+            2: "#00ff00",
+            3: "#0000ff",
+            4: "#000000"
+        }
+
+        console.log("dummyData", dummyData);
+        let entity = dummyData["ENTITY"];  
+        let meta_relationship_def = dummyData["META_RELATIONSHIP_DEF"];
+        let rt_record_relation = dummyData["RT_RECORD_RELATION"];
+
+        var meta_relationship_dict = {};
+        for (var i = 0; i < meta_relationship_def.length; i++) {
+            meta_relationship_dict[meta_relationship_def[i]["ID"]] = meta_relationship_def[i]["RELDESC1TO2"]
+        }
+        console.log("meta_relationship_dict", meta_relationship_dict);
+
+        let nodes = [];
+        for (let i = 0; i < entity.length; i++) {
+            let node_id = entity[i]["ID"];
+            let node = {
+                id: node_id,
+                marker: {
+                    radius: 30
+                },
+                info: entity[i]["NAME"]
+            };
+            if(node_id.includes("PEOPL")){
+                node["color"] = peopleColor;
+            } else {
+                node["color"] = companyColor;
+            };
+            nodes.push(node);
+        };
+        console.log(nodes); 
+
+        let edges = [];
+        for (let i = 0; i < rt_record_relation.length; i++) {
+            let edge = rt_record_relation[i];
+            edges.push({
+                from: edge["ID1"], 
+                to: edge["ID2"],
+                reln_id: edge["RELTYPE_ID"],
+                color: edgeColors[edge["RELTYPE_ID"]],
+                description: meta_relationship_dict[edge["RELTYPE_ID"]],
+            });
+        };
+        console.log(edges); 
+
+Highcharts.chart('container', {
+  chart: {
+    type: 'networkgraph',
+    marginTop: 80
+  },
+
+  title: {
+    text: 'Radaptive network graph demo'
+  },
+
+  tooltip: {
+    formatter: function () {
+      return '<b>' + this.key + '</b>: ' + this.point.info;
+    }
+  },
+
+  plotOptions: {
+    networkgraph: {
+      keys: ['from', 'to'],
+      layoutAlgorithm: {
+        enableSimulation: true,
+        integration: 'verlet',
+        linkLength: 200
+      }
+    }
+  },
+
+  series: [
+    {
+      marker: {
+        radius: 13
+      },
+      dataLabels: {
+        enabled: true,
+        linkFormat: "{point.description}",
+        allowOverlap: true,
+        style: {
+          textOutline: false
+        }
+      },
+      data: edges,
+      nodes: nodes
+    }
+  ]
+});
+    </script>
+  </body>
+</html>
