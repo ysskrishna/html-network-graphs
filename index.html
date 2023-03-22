@@ -4,7 +4,9 @@
   1. Add ID param in GET API to get only relevent entities and connections
   2. Add legend 
   3. Add order of precendce
-  Custom tooltip: https://jsfiddle.net/BlackLabel/4d3pmz7n/1/
+  Custom toolips:
+  https://jsfiddle.net/BlackLabel/jym5a8n9/
+  https://jsfiddle.net/BlackLabel/4d3pmz7n/1/
  -->
 <html>
   <head>
@@ -19,11 +21,115 @@
         margin: 0 auto;
         height: 500px;
       }
+
+      #custom-tooltip {
+        border: 1px solid #28f;
+        border-radius: 3px;
+        position: absolute;
+        padding: 3px 5px;
+        display: none;
+        background-color: #fffa;
+        font-family: 'Lucida Grande', 'Lucida Sans Unicode', 'Verdana, Arial, Helvetica, sans-serif';
+        font-size:12px
+      }
     </style>
   </head>
   <body>
     <div id="container"></div>
+    <div id="custom-tooltip">Test</div>
+
     <script>
+
+      // Custom logic for hover over link: https://jsfiddle.net/BlackLabel/jym5a8n9/
+      const customTooltip = document.getElementById('custom-tooltip'), container = document.getElementById('container');
+
+      function showCustomTooltip(text) {
+        customTooltip.style.display = 'block';
+        customTooltip.innerHTML = text;
+      }
+
+      function hideCustomTooltip() {
+        customTooltip.style.display = 'none';
+      }
+
+      container.addEventListener('mousemove', event => {
+        if (customTooltip.style.display === 'block') {
+          const tooltipBBox = customTooltip.getBoundingClientRect(),
+                x = Math.round(event.x - tooltipBBox.width / 2),
+                y = Math.round(event.y - tooltipBBox.height - 10);
+
+          customTooltip.style.left = `${x}px`;
+          customTooltip.style.top = `${y}px`;
+        }
+      });
+
+      Highcharts.seriesTypes.networkgraph.prototype.pointClass.prototype.renderLink = function() {
+        let attribs,
+            line = this,
+            chart = line.series.chart;
+
+        if (!line.graphic) {
+          
+          const path = this.getLinkPath();
+          console.log("line", line);
+          console.log("path", path);
+
+          line.graphic = chart.renderer
+            .path(path)
+            .add(this.series.group);
+
+          line.svgPadding = chart.renderer
+            .path(path)
+            .attr({
+              stroke: 'transparent',
+              'stroke-width': 15
+            })
+            .on('mouseover', function(e) {
+              showCustomTooltip(line?.options?.link_description);
+            })
+            .on('mouseleave', function() {
+              hideCustomTooltip();
+            })
+            .add(this.series.group);
+        }
+      };
+      
+      
+    Highcharts.seriesTypes.networkgraph.prototype.pointClass.prototype.redrawLink = function() {
+      let path = this.getLinkPath(),
+          attribs;
+
+      if (this.graphic) {
+        this.shapeArgs = {
+          d: path
+        };
+        if (!this.series.chart.styledMode) {
+          attribs = this.series.pointAttribs(this);
+          this.graphic.attr(attribs);
+          (this.dataLabels || []).forEach(function(label) {
+            if (label) {
+              label.attr({
+                opacity: attribs.opacity
+              });
+            }
+          });
+          
+          // this method differs from the original only in this line:
+          this.svgPadding.attr({ d: path });
+        }
+        this.graphic.animate(this.shapeArgs);
+        // Required for dataLabels
+        var start = path[0];
+        var end = path[1];
+        if (start[0] === 'M' && end[0] === 'L') {
+          this.plotX = (start[1] + end[1]) / 2;
+          this.plotY = (start[2] + end[2]) / 2;
+        }
+      }
+    };
+   
+
+
       const authToken = "Basic c3VwZXJ1c2VyOiR1cGVyVSRlciE=";
       // Defining async function
       async function fetchGraphData() {
@@ -96,11 +202,11 @@
             edges.push({
                 from: edge["ID1"], 
                 to: edge["ID2"],
-                reln_id: edge["RELTYPE_ID"],
                 color: edgeColors[edge["RELTYPE_ID"]],
-                description: meta_relationship_dict[edge["RELTYPE_ID"]],
                 width:2,
-                // use labelrank in case of collission of edges: https://api.highcharts.com/highcharts/series.networkgraph.data
+                reln_id: edge["RELTYPE_ID"],
+                link_description: meta_relationship_dict[edge["RELTYPE_ID"]],
+                // use labelrank in case of collision of edges: https://api.highcharts.com/highcharts/series.networkgraph.data
             });
         };
         console.log(edges); 
@@ -114,7 +220,6 @@
           title: {
             text: 'Radaptive network graph demo'
           },
-
           tooltip: {
             formatter: function () {
               let tooltipInfo = `<b>ID</b>: ${this.key}<br/><b>NAME</b>: ${this.point.info}`;
@@ -130,19 +235,26 @@
                 integration: 'verlet',
                 linkLength: 200
               }
+            },
+            series: {
+              point: {
+                events: {
+                  mouseOut: function() {
+                    hideCustomTooltip();
+                  }
+                }
+              }
             }
           },
-
-          series: [
+        series: [
             {
               dataLabels: {
                 enabled: true,
                 linkFormat: "{point.description}",
-                allowOverlap: true,
+                // allowOverlap: true,
                 style: {
                   textOutline: true
-                },
-                linkTextPath:"some"
+                }
               },
               data: edges,
               nodes: nodes
