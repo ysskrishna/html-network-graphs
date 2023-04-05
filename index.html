@@ -15,10 +15,11 @@
     <script src="https://code.highcharts.com/modules/accessibility.js"></script>
 
     <style type="text/css">
+      /* @import "https://code.highcharts.com/css/highcharts.css"; */
       #container {
-        width: 95%;
+        width: 98%;
         margin: 0 auto;
-        height: 665px;
+        height: 98%;
       }
 
       #custom-tooltip {
@@ -38,6 +39,10 @@
     <div id="custom-tooltip">Test</div>
 
     <script>
+
+      const params = new URLSearchParams(document.location.search);
+      const entity_id = params.get("id");
+      
 
       // Custom logic for hover over link: https://jsfiddle.net/BlackLabel/jym5a8n9/
       const customTooltip = document.getElementById('custom-tooltip'), container = document.getElementById('container');
@@ -70,9 +75,6 @@
         if (!line.graphic) {
           
           const path = this.getLinkPath();
-          console.log("line", line);
-          console.log("path", path);
-
           line.graphic = chart.renderer
             .path(path)
             .add(this.series.group);
@@ -144,6 +146,26 @@
       // Calling that async function
       fetchGraphData();
 
+      async function fetchUserData(id) {
+        const url = "https://contactsdatabase.radaptive.com/services/api/RKM/getRelatedRecords/"+id
+        const data = await fetch(url, {
+          method: "GET",
+          headers: {
+            Authorization: authToken,
+          }
+        })
+        .then((res) => res.json());
+        console.log("data", data);
+      }
+
+      if (entity_id){
+        fetchUserData(entity_id)
+      }
+
+      function formatName(fullName){
+        var arr = fullName.split(" ");
+        return arr.join("<br>");;
+      }
       
 
       function showGraph(dummyData) {
@@ -189,7 +211,7 @@
                 },
                 info: entity[i]["NAME"],
                 color: nodeOptions["color"],
-                name: entity[i]["NAME"]
+                name: formatName(entity[i]["NAME"])
             };
             nodes.push(node);
         };
@@ -218,11 +240,11 @@
           },
 
           title: {
-            text: 'Radaptive network graph demo'
+            text: 'Contacts Database Graph'
           },
           tooltip: {
             formatter: function () {
-              let tooltipInfo = `<b>ID</b>: ${this.key}<br/><b>NAME</b>: ${this.point.info}`;
+              let tooltipInfo = `<b>ID</b>: ${this.point.id}<br/><b>NAME</b>: ${this.point.info}`;
               return tooltipInfo;
             }
           },
@@ -234,6 +256,9 @@
                 enableSimulation: false,
                 integration: 'verlet',
                 linkLength: 200
+              },
+              dataLabels: {
+                verticalAlign:"middle"
               }
             },
             series: {
@@ -252,8 +277,11 @@
                 enabled: true,
                 linkFormat: "{point.description}",
                 // allowOverlap: true,
+                format: "{point.name}",
                 style: {
-                  textOutline: true
+                  textOverflow: 'ellipsis',
+                  textOutline: true,
+                  fontSize: '9.5px'
                 }
               },
               data: edges,
