@@ -143,8 +143,7 @@
         .then((res) => res.json());
         showGraph(data);
       }
-      // Calling that async function
-      fetchGraphData();
+      
 
       async function fetchUserData(id) {
         const url = "https://contactsdatabase.radaptive.com/services/api/RKM/getRelatedRecords/"+id
@@ -155,11 +154,14 @@
           }
         })
         .then((res) => res.json());
-        console.log("data", data);
+        showGraph(data);
       }
 
-      if (entity_id){
+      // Calling that async function
+      if (entity_id && entity_id.length > 0){
         fetchUserData(entity_id)
+      } else {
+        fetchGraphData();
       }
 
       function formatName(fullName){
