@@ -212,6 +212,7 @@
                   radius: nodeOptions["radius"]
                 },
                 info: entity[i]["NAME"],
+                textOutline: true,
                 color: nodeOptions["color"],
                 name: formatName(entity[i]["NAME"])
             };
@@ -282,7 +283,7 @@
                 format: "{point.name}",
                 style: {
                   textOverflow: 'ellipsis',
-                  textOutline: true,
+                  textOutline: 'none',
                   fontSize: '9.5px'
                 }
               },
